@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="https://code.createjs.com/easeljs-0.8.0.min.js"> </script>
+    <script src="https://code.createjs.com/tweenjs-0.6.2.min.js"> </script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"> </script>
+    <title>Canvas Animation</title>
+    <style>
+      #canvas {border: solid 1px black; background-color: lightblue;}
+    </style>
+  </head> 
+  <body>
+    <canvas id="canvas"></canvas>
+    <a href="/day23" target="_blank"> Канвас </a>
+    <script >
+      var socket = io(location.origin);
+          stage = new createjs.Stage("canvas");
+          canvas = document.querySelector('canvas');
+          canvas.width = window.innerWidth-50;
+          canvas.height = window.innerHeight-50;
+      var ID;
+      var color;
+      var size;
+      socket.on('user connected', function(UserId){ 
+        ID = UserId;
+        color = '#'+ RandomNumb(0,255).toString(16) + RandomNumb(0,255).toString(16) + RandomNumb(0,255).toString(16);
+        size = RandomNumb(10,30);
+        window[UserId] = new createjs.Shape();
+        window[UserId].graphics.beginFill(color).drawCircle(0, 0, size);       
+        window[UserId].x = 60;
+        window[UserId].y = 60;
+        stage.addChild(window[UserId]);
+        createjs.Ticker.addEventListener("tick", onTickHandler);
+        socket.emit('user done',  window[UserId].x,  window[UserId].y, ID, color, size);
+        window[UserId].on("pressmove", function(evt) {
+          evt.target.x = evt.stageX;
+          evt.target.y = evt.stageY;   
+          socket.emit('move done', {x: window[UserId].x, y: window[UserId].y}, ID);
+        });
+      });
+        
+      socket.on('user disconnected', function(UserId){
+        stage.removeChild(window[UserId]);
+      });
+    
+      function onTickHandler(evt) {   
+          stage.update();
+        };
+      window.addEventListener('resize', onResize, false);
+      onResize();
+      function onResize() {
+        canvas.width = window.innerWidth-50;
+        canvas.height = window.innerHeight-50;
+      };
+      function RandomNumb(min, max){
+        return Math.floor(Math.random() * (max - min) + min);
+      }
+     
+    </script>
+  </body>
+</html>

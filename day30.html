@@ -1,0 +1,191 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="https://code.createjs.com/easeljs-0.8.0.min.js"> </script>
+    <script src="https://code.createjs.com/tweenjs-0.6.2.min.js"> </script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"> </script>
+    <link href="/main.css" rel="stylesheet">
+    <meta name="viewport"  content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Disappearing Tail</title>
+  </head> 
+  <body>
+    <canvas id="canvas" style="visibility:hidden"></canvas>
+    <div class="DialogWindow"> 
+      <div id="parent">
+      	<div class="firstbutton navigate">
+       	    <button id="create"> Создать доску </button>
+       	</div>
+       	<div class="secondbutton navigate">
+            <button id="join"> Присоединиться </button>
+        </div>
+      </div>
+    </div>
+    <script >
+      var socket = io();
+      var create = document.getElementById('create');
+      var join = document.getElementById('join');
+      var Body = document.querySelector('body');
+      var parent = document.getElementById('parent');
+      var InputDiv;
+      var SubmitDiv;
+      var color;
+      var size;
+      create.addEventListener("mousedown", function(){
+        ChangeParent("create")
+      });
+      join.addEventListener("mousedown", function(){
+        ChangeParent("join")
+      });
+      function ChangeParent(value){
+        var RoomInput = document.createElement('input');
+	RoomInput.placeholder = "Enter room number";
+        var SubmitButton = document.createElement('button');
+	if (value == "create") {
+          create.setAttribute("disabled",true);
+          join.removeAttribute('disabled',true); 
+	  RoomInput.id = "InputCreate";
+	  SubmitButton.id = "SubmitCreate";
+          SubmitButton.innerText = "Создать";
+          SubmitButton.addEventListener("mousedown", function(evt){
+             if (RoomInput.value == "")
+	        ShowErrore("Введите название доски","");
+             else 
+             socket.emit("board create", RoomInput.value);
+	  });
+	}
+        else {
+          create.removeAttribute("disabled",true);
+          join.setAttribute("disabled",true);
+	  RoomInput.id = "InputJoin";
+	  SubmitButton.id = "SubmitJoin";
+          SubmitButton.innerText = "Присоединиться";
+          SubmitButton.addEventListener("mousedown", function(evt){
+             if (RoomInput.value == "")
+	        ShowErrore("Введите название доски","");
+             else 
+		socket.emit("board join", RoomInput.value);
+	  });
+	}
+        RoomInput.style.width = "115px";
+	SubmitButton.style.width = "119px";     
+        if (InputDiv != null){
+          parent.removeChild(InputDiv);
+          parent.removeChild(SubmitDiv);
+	}
+        InputDiv = document.createElement('div');
+        InputDiv.className = "inputdiv navigate";
+        SubmitDiv = document.createElement('div');
+	SubmitDiv.className = "submitdiv navigate";
+        
+	InputDiv.appendChild(RoomInput);
+        SubmitDiv.appendChild(SubmitButton);
+	parent.appendChild(InputDiv);
+        parent.appendChild(SubmitDiv);
+      };
+	
+      socket.on('user connected30', function(UserId, boardname, board30){
+	  DialogWindow = document.getElementsByClassName('DialogWindow')[0];
+	  Body.removeChild(DialogWindow);
+          stage = new createjs.Stage("canvas");
+          canvas = document.querySelector('canvas');
+	  canvas.style.visibility = "visible";
+          createjs.Touch.enable(stage);
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+            ID = UserId;
+            color = '#'+(Math.random()*0xFFFFFF<<0).toString(16);
+		    //'#'+ RandomNumb(0,255).toString(16) + RandomNumb(0,255).toString(16) + RandomNumb(0,255).toString(16);
+            size = RandomNumb(10,30);
+            window[UserId] = new createjs.Shape();
+            window[UserId].graphics.beginFill(color).drawCircle(0, 0, size);       
+            window[UserId].x = RandomNumb(20,canvas.width-140);
+            window[UserId].y = RandomNumb(20,canvas.height-140);
+            text = new createjs.Text(boardname, "30px Arial","#000");
+            text.x = 20;
+            text.y = 20;
+            stage.addChild(window[UserId], text);
+            createjs.Ticker.addEventListener("tick", onTickHandler);
+            socket.emit('user done30',  window[UserId].x,  window[UserId].y, color, size, boardname); 
+            window[UserId].on("pressmove", function(evt) {
+              CreateTail(evt.stageX, evt.stageY, color, size); 
+              evt.target.x = evt.stageX;
+              evt.target.y = evt.stageY;   
+              socket.emit('move done30', {x: window[UserId].x, y: window[UserId].y}, ID, boardname, color, size);
+            });
+          });
+      socket.on('user done30', function(X, Y, ID, color, size, board30){
+        console.log(board30);
+        CreateSprite(X,Y, color, size, ID);
+      });
+
+  socket.on('sprite change coord30', function(obj, color, size, UserId){ 
+        window[UserId].x = obj.x;
+        window[UserId].y = obj.y;
+        CreateTail(obj.x, obj.y, color, size);    
+      });
+
+  socket.on('users base30', function(boards, boardname){
+    for(user in boards[boardname]){
+        CreateSprite(boards[boardname][user].x, boards[boardname][user].y, boards[boardname][user].color, boards[boardname][user].size, user);
+    }       
+  });
+  
+	    
+  socket.on('board errore', function(boardname, massage){
+    ShowErrore(boardname, massage);
+  }); 
+	    
+      function ShowErrore(first, second){
+        ErroreWindow = document.createElement('div');
+	ErroreWindow.className = "ErroreWindow";
+	ErroreWindow.innerHTML = first + second;
+        Body.appendChild(ErroreWindow);
+	deleteElement(ErroreWindow);
+      }
+      function deleteElement(Element){
+        setTimeout(function(){ Body.removeChild(Element)},5000);
+      };
+	     
+      socket.on('user disconnected30', function(UserId){
+        stage.removeChild(window[UserId]);
+      });
+      
+      function onTickHandler(evt) {   
+          stage.update();
+        };
+      window.addEventListener('resize', onResize, false);
+      onResize();
+      function onResize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      function RandomNumb(min, max){
+        return Math.floor(Math.random() * (max - min) + min);
+      }
+    
+     function CreateSprite(X,Y, color, size, Id){
+        window[Id] = new createjs.Shape();
+        window[Id].graphics.beginFill(color).drawCircle(0, 0, size);     
+        stage.addChild(window[Id]);
+        window[Id].x = X;
+        window[Id].y = Y;
+      createjs.Ticker.addEventListener("tick", onTickHandler);
+      };
+	    
+      function CreateTail(X,Y, color, size){
+        circle = new createjs.Shape();
+        circle.graphics.beginFill(color).drawCircle(0, 0, size-2);
+        stage.addChild(circle);
+        circle.x = X;
+        circle.y = Y;
+        circle.alpha = 0.75;
+        createjs.Tween.get(circle)
+        .to({scaleX: 0.8, scaleY: 0.8, alpha:0.50}, 150)        
+        .to({scaleX: 0.75, scaleY: 0.75, alpha:0.33}, 150)        
+        .to({scaleX: 0.66667, scaleY: 0.66667, alpha:0.25}, 150)
+        .to({scaleX: 0.5, scaleY: 0.5, alpha:0}, 150);
+        createjs.Ticker.addEventListener("tick", onTickHandler);
+      }
+    </script>
+  </body>
+</html>
