@@ -1,0 +1,47 @@
+body {padding:0px; margin:0px; overflow: hidden;}
+#wrapper {background-color: lightblue; width: 1300px; height: 600px;}
+.circle{position: absolute;border-radius:50%;}
+.circle .circle {position:fixed; opacity: 1;}
+.circle .circle.opacityT {
+    animation: mymove 1s;
+    animation-fill-mode: forwards;
+ }
+@keyframes mymove {
+    0%   {opacity: 1;
+    visibility: visible;}
+    100% {opacity: 0;
+    visibility: hidden;}
+}
+  
+.DialogWindow {
+    position: absolute;
+    width: 290px;
+    height: 200px;
+    left: 50%;
+    top: 50%;
+    margin-left: -156px;
+    margin-top: -100px;
+    background: #fc0; 
+    border: solid 1px black; 
+    padding: 10px; 
+    overflow: auto; 
+    background-color: lightblue}
+#parent {margin: 30px;  background-color: yellow; height: 70%;}
+.navigate {	height: 25%;  margin: auto;}
+.firstbutton {width: 120px; height: 35px;}
+.secondbutton{width: 118px;}
+.inputdiv {width:119px}
+.submitdiv {width:119px}
+.navigate > * { margin: 7px 0px;}
+#create {margin: 7px 7px;}
+#canvas {border: solid 1px black; background-color: lightblue;}
+.ErroreWindow  {position: absolute;
+    width: 170px;
+    left: 50%;
+    top: 10%;
+    margin-left: -95px;
+    margin-top: -25px;
+    border: solid 1px black;
+    padding: 10px;
+    background-color: #FA8072;
+}
