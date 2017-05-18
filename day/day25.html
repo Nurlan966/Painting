@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="https://code.createjs.com/easeljs-0.8.0.min.js"> </script>
+    <script src="https://code.createjs.com/tweenjs-0.6.2.min.js"> </script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"> </script>
+    <title>Disappearing Tail</title>
+    <style>
+      #canvas {border: solid 1px black; background-color: lightblue;}
+    </style>
+  </head> 
+  <body>
+    <canvas id="canvas"></canvas>
+    <script >
+      var socket = io();
+      var color;
+      var size;
+          stage = new createjs.Stage("canvas");
+          canvas = document.querySelector('canvas');
+          createjs.Touch.enable(stage);
+          canvas.width = window.innerWidth-50;
+          canvas.height = window.innerHeight-50;
+          socket.on('user connected', function(UserId){ 
+            ID = UserId;
+            color = '#'+ RandomNumb(0,255).toString(16) + RandomNumb(0,255).toString(16) + RandomNumb(0,255).toString(16);
+            size = RandomNumb(10,30);
+            window[UserId] = new createjs.Shape();
+            window[UserId].graphics.beginFill(color).drawCircle(0, 0, size);       
+            window[UserId].x = RandomNumb(20,canvas.width-140);
+            window[UserId].y = RandomNumb(20,canvas.height-140);
+            currentx = window[UserId].x;
+            currenty = window[UserId].y;
+            stage.addChild(window[UserId]);
+            createjs.Ticker.addEventListener("tick", onTickHandler);
+            socket.emit('user done',  window[UserId].x,  window[UserId].y, ID, color, size); 
+            window[UserId].on("pressmove", function(evt) {
+              CreateTail(evt.stageX, evt.stageY, color, size); 
+              evt.target.x = evt.stageX;
+              evt.target.y = evt.stageY;   
+              socket.emit('move done', {x: window[UserId].x, y: window[UserId].y}, ID);
+            });
+          });
+ 
+      socket.on('user done24', function(X, Y, ID, color, size){
+        CreateSprite(X,Y, color, size, ID);
+      });
+      
+      socket.on('sprite change coord25', function(obj, color, size){ 
+        CreateTail(obj.x, obj.y, color, size);    
+      });
+
+      socket.on('sprite change coord', function(UserId, obj){
+        window[UserId].x = obj.x;
+        window[UserId].y = obj.y;
+      }); 
+      
+      socket.on('users base', function(users){
+	      console.log(users);
+          for(user in users){
+              CreateSprite(users[user].x, users[user].y, users[user].color, users[user].size, user);
+          }       
+      });
+      
+      socket.on('user disconnected', function(UserId){
+        stage.removeChild(window[UserId]);
+      });
+      
+      function onTickHandler(evt) {   
+          stage.update();
+        };
+      window.addEventListener('resize', onResize, false);
+      onResize();
+      function onResize() {
+        canvas.width = window.innerWidth-50;
+        canvas.height = window.innerHeight-50;
+      };
+      function RandomNumb(min, max){
+        return Math.floor(Math.random() * (max - min) + min);
+      }
+    
+     function CreateSprite(X,Y, color, size, Id){
+        window[Id] = new createjs.Shape();
+        window[Id].graphics.beginFill(color).drawCircle(0, 0, size);     
+        stage.addChild(window[Id]);
+        window[Id].x = X;
+        window[Id].y = Y;
+      createjs.Ticker.addEventListener("tick", onTickHandler);
+      };
+			
+      function CreateTail(X,Y, color, size){
+        circle = new createjs.Shape();
+        circle.graphics.beginFill(color).drawCircle(0, 0, size-2);
+        stage.addChild(circle);
+        circle.x = X;
+        circle.y = Y;
+        circle.alpha = 0.75;
+        createjs.Tween.get(circle)
+        .to({scaleX: 0.8, scaleY: 0.8, alpha:0.50}, 150)        
+        .to({scaleX: 0.75, scaleY: 0.75, alpha:0.33}, 150)        
+        .to({scaleX: 0.66667, scaleY: 0.66667, alpha:0.25}, 150)
+        .to({scaleX: 0.5, scaleY: 0.5, alpha:0}, 150);
+        createjs.Ticker.addEventListener("tick", onTickHandler);
+      }
+    </script>
+  </body>
+</html>
