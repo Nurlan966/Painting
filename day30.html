@@ -48,7 +48,7 @@
           SubmitButton.innerText = "Создать";
           SubmitButton.addEventListener("mousedown", function(evt){
              if (RoomInput.value == "")
-	        ShowErrore("Введите название доски","");
+	        ShowErrore("Введите название комнаты","");
              else 
              socket.emit("board create", RoomInput.value);
 	  });
@@ -61,7 +61,7 @@
           SubmitButton.innerText = "Присоединиться";
           SubmitButton.addEventListener("mousedown", function(evt){
              if (RoomInput.value == "")
-	        ShowErrore("Введите название доски","");
+	        ShowErrore("Введите название комнаты","");
              else 
 		socket.emit("board join", RoomInput.value);
 	  });
